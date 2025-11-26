@@ -1,5 +1,6 @@
 # FHEVM-TAX
 buid zama tech FHE 
+
 **Tree folder**
 
 ```
@@ -13,3 +14,21 @@ fhe-tax-dapp/                  ← Name project folder
 └── src/
     └── main.js                ← all logic FHE + Relayer SDK 
 ```
+
+** Setup version nodejs + npm**
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+```
+```
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+```
+```
+nvm install 22
+nvm use 22
+nvm alias default 22
+```
+node -v    # → v22.xx.x
+npm -v     # → 10.xx.x
+
+
