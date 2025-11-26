@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FHE TAX</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <!-- THÊM FHEVM.JS ĐỂ MÃ HÓA -->
+  <script src="https://cdn.jsdelivr.net/npm/@fhevm/js@0.9.1/dist/fhevm.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      /* Giữ gradient vàng nhạt làm nền chính */
+      background: 
+        linear-gradient(135deg, #fff8e1 0%, #ffecb3 50%, #ffe082 100%),
+        url('https://sf-static.upanhlaylink.com/img/image_2025112678dd783a8345ae4a8afb47c30ffb8065.jpg') center/cover no-repeat fixed;
+  
+      /* Làm ảnh mờ nhẹ để không lấn chữ + khung trắng */
+      background-blend-mode: overlay;
+      color: #3c2f00;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+  
+      /* Tùy chọn: làm ảnh trong suốt hơn */
+      position: relative;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(15px);
+      border: 2px solid #ffd700;
+      border-radius: 24px;
+      padding: 50px 35px;
+      width: 100%;
+      max-width: 540px;
+      box-shadow: 
+        0 20px 50px rgba(255, 193, 7, 0.3),
+        0 0 40px rgba(255, 215, 0, 0.5),
+        inset 0 0 30px rgba(255, 255, 255, 0.6);
+      text-align: center;
+    }
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.5rem;
+      color: #b8860b;
+      text-shadow: 
+        0 0 20px #ffd700,
+        0 0 40px #ffaa00;
+      margin-bottom: 12px;
+      animation: pulseGlowGold 3s ease-in-out infinite alternate;
+    }
+    p.subtitle {
+      color: #5c4000;
+      margin-bottom: 20px 0 35px;
+      font-size: 1.05rem;
+      font-weight: 500;
+    }
+    .connect-btn {
+      background: linear-gradient(45deg, #ffd700, #ffaa00);
+      color: #000;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 25px;
+      transition: all 0.3s;
+      box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4);
+    }
+    .connect-btn:hover { transform: scale(1.05); }
+    .connect-btn.connected { background: #51cf66; }
+    input {
+      width: 100%; 
+      padding: 18px 24px;                 /* to hơn tí cho đẹp */
+      font-size: 1.3rem;
+      background: rgba(255, 255, 255, 0.92);   /* trắng trong suốt nhẹ → hợp nền vàng */
+      border: 3px solid #ffd700;              /* viền vàng đậm nổi bật */
+      border-radius: 20px;
+      color: #b8860b;                         /* chữ vàng đậm sang trọng */
+      outline: none;
+      font-weight: 700;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(255, 193, 7, 0.4);
+      transition: all 0.4s;
+    }
+    input:focus { 
+      border-color: #ffaa00;
+      box-shadow: 0 0 35px rgba(255, 215, 0, 0.7);
+      background: #ffffff;
+      transform: scale(1.02);
+    }
+    button {
+      background: linear-gradient(45deg, #ffd700, #ffaa00); color: #000; font-weight: 600;
+      padding: 14px 32px; border: none; border-radius: 12px; font-size: 1.1rem;
+      cursor: pointer; margin-top: 10px; box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+    }
+    button:hover { transform: translateY(-3px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result {
+      margin-top: 25px; padding: 20px; background: rgba(30, 30, 46, 0.7);
+      border-radius: 12px; border-left: 5px solid #ffd700; font-size: 1.1rem; line-height: 2.2;
+      overflow: hidden;
+    }
+    .result-item {
+      opacity: 0;
+      transform: translateX(-50px);
+      margin: 14px 0;
+      padding: 8px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+    }
+    .status {
+      font-weight: 800;
+      padding: 14px 28px;
+      border-radius: 20px;
+      background: linear-gradient(45deg, #b8860b, #ffd700);
+      color: #000;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
+    }
+    .poor { background: #718096; color: #fff; }
+    .normal { background: #63b3ed; color: #fff; }
+    .rich { background: #9f7aea; color: #fff; }
+    .super-rich { background: #f687b3; color: #fff; }
+    .millionaire { background: #f6ad55; color: #000; }
+    .billionaire { background: #fc8181; color: #fff; }
+    .error { color: #ff6b6b; margin-top: 15px; font-weight: 600; }
+    .tx-hash { font-size: 0.85rem; color: #a0aec0; word-break: break-all; margin-top: 10px; }
+    .loading { color: #ffd700; font-style: italic; }
+    .etherscan-link { margin-top: 10px; }
+    .etherscan-link a { color: #4fd1c5; text-decoration: underline; font-size: 0.9rem; }
+    footer { 
+      margin-top: 50px; 
+      font-size: 0.9rem; 
+      color: #5c4000; 
+      font-weight: 600;
+    }
+
+    /* GLOW CỰC MẠNH CHO SỐ */
+    .glow-number {
+      font-weight: 800;
+      font-size: 1.3rem;
+      letter-spacing: 1px;
+    }
+    .glow-gold {
+      color: #ffd700;
+      text-shadow: 
+        0 0 10px #ffd700,
+        0 0 20px #ffd700,
+        0 0 30px #ffd700,
+        0 0 50px #ffaa00,
+        0 0 70px #ffaa00;
+      animation: pulseGlowGold 2s infinite alternate;
+    }
+    .glow-red {
+      color: #ff6b6b;
+      text-shadow: 
+        0 0 10px #ff6b6b,
+        0 0 20px #ff6b6b,
+        0 0 30px #ff6b6b,
+        0 0 50px #ff4444,
+        0 0 70px #ff4444;
+      animation: pulseGlowRed 1.8s infinite alternate;
+    }
+    .glow-green {
+      color: #51cf66;
+      text-shadow: 
+        0 0 10px #51cf66,
+        0 0 20px #51cf66,
+        0 0 30px #51cf66,
+        0 0 50px #40b558,
+        0 0 70px #40b558;
+      animation: pulseGlowGreen 2.2s infinite alternate;
+    }
+
+    @keyframes pulseGlowGold {
+      from { text-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700; }
+      to { text-shadow: 0 0 20px #ffd700, 0 0 40px #ffd700, 0 0 60px #ffaa00; }
+    }
+    @keyframes pulseGlowRed {
+      from { text-shadow: 0 0 10px #ff6b6b; }
+      to { text-shadow: 0 0 20px #ff6b6b, 0 0 40px #ff6b6b; }
+    }
+    @keyframes pulseGlowGreen {
+      from { text-shadow: 0 0 10px #51cf66; }
+      to { text-shadow: 0 0 20px #51cf66, 0 0 40px #51cf66; }
+    }
+
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulseRed {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    @keyframes bounceGreen {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.5); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    #characterImage img {
+      animation: float 3s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>FHE TAX</h1>
+    <p class="subtitle">FHE Encrypted Data – No One Sees Your Money!</p>
+   
+    <button class="connect-btn" id="connectBtn">CONNECT WALLET</button>
+    <div class="wallet-info" id="walletInfo"></div>
+
+    <div class="input-group">
+      <input type="number" id="amount" placeholder="Enter the amount (USD)" step="0.1" min="0" />
+    </div>
+
+    <button onclick="declareOnChain()" id="declareBtn" disabled>SIGN & WRITE ON BLOCKCHAIN (FHE)</button>
+
+    <div class="result" id="result">Connect wallet and enter amount...</div>
+    <div class="error" id="error"></div>
+    <div class="tx-hash" id="txHash"></div>
+    <div class="etherscan-link" id="contractLink"></div>
+
+    <footer>© 2025 Canhsiro – DApp FHE On-Chain</footer>
+  </div>
+
+  <script>
+    // CẬP NHẬT ĐỊA CHỈ HỢP ĐỒNG FHE MỚI SAU KHI DEPLOY
+    const CONTRACT_ADDRESS = "0x11408744D57DfC18a170789B28F6F2d6F58A37d1";
+    const CONTRACT_ABI = [
+      "function declare(externalEuint32 input, bytes proof)",
+      "function getDeclaration() view returns (euint32)",
+      "event Declared(address indexed user)"
+    ];
+
+    let provider, signer, contract, userAddress;
+    let isConnected = false;
+
+    // Cập nhật link Etherscan
+    document.getElementById("contractLink").innerHTML = `
+      <a href="https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}" target="_blank">
+        View FHE contract on Sepolia Etherscan
+      </a>
+    `;
+
+    document.getElementById("connectBtn").onclick = () => {
+      if (isConnected) {
+        disconnectWallet();
+      } else {
+        connectWallet();
+      }
+    };
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        document.getElementById("error").innerText = "Install MetaMask: https://metamask.io";
+        return;
+      }
+
+      try {
+        await ethereum.request({ method: 'eth_requestAccounts' });
+        provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+        signer = provider.getSigner();
+        const address = await signer.getAddress();
+
+        userAddress = address;
+        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        const short = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+        document.getElementById("walletInfo").innerHTML = `<strong>Đã kết nối:</strong> ${short}`;
+        document.getElementById("connectBtn").innerText = "DISCONNECT";
+        document.getElementById("connectBtn").classList.add("connected");
+        document.getElementById("declareBtn").disabled = false;
+        document.getElementById("error").innerText = "";
+
+        isConnected = true;
+        loadUserData();
+
+      } catch (err) {
+        document.getElementById("error").innerText = "Connection failed: " + (err.message || "Unknown error");
+      }
+    }
+
+    function disconnectWallet() {
+      provider = signer = contract = userAddress = null;
+      isConnected = false;
+      document.getElementById("walletInfo").innerHTML = "";
+      document.getElementById("connectBtn").innerText = "CONNECT EVM WALLET";
+      document.getElementById("connectBtn").classList.remove("connected");
+      document.getElementById("declareBtn").disabled = true;
+      document.getElementById("amount").value = "";
+      document.getElementById("result").innerHTML = "Connect wallet and enter amount...";
+      document.getElementById("error").innerText = "";
+      document.getElementById("txHash").innerText = "";
+    }
+
+    // TẢI DỮ LIỆU ĐÃ MÃ HÓA → GIẢI MÃ
+    async function loadUserData() {
+      if (!contract || !userAddress) return;
+      try {
+        const encrypted = await contract.getDeclaration();
+        const zeroHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
+        if (encrypted !== zeroHash) {
+          const decrypted = await fhevm.userDecryptEuint32(encrypted, CONTRACT_ADDRESS, userAddress);
+          const usd = decrypted / 100;
+          document.getElementById("amount").value = usd;
+          calculateTax(usd);
+        }
+      } catch (err) {
+        console.log("No data or decoding error");
+      }
+    }
+
+    // GHI DỮ LIỆU MÃ HÓA LÊN CHAIN
+    async function declareOnChain() {
+      const amountInput = document.getElementById("amount").value;
+      const resultDiv = document.getElementById("result");
+      const errorDiv = document.getElementById("error");
+      const txHashDiv = document.getElementById("txHash");
+
+      if (!amountInput || amountInput <= 0) {
+        errorDiv.innerText = "Enter valid amount!";
+        return;
+      }
+
+      const amountUSD = Math.round(parseFloat(amountInput) * 100);
+      resultDiv.innerHTML = `<span class="loading">Encrypting data...</span>`;
+      errorDiv.innerText = "";
+      txHashDiv.innerText = "";
+
+      try {
+        // MÃ HÓA DỮ LIỆU
+        const input = fhevm.createEncryptedInput(CONTRACT_ADDRESS, userAddress);
+        input.add32(amountUSD);
+        const encryptedInput = await input.encrypt();
+
+        // GỬI GIAO DỊCH
+        const tx = await contract.declare(
+          encryptedInput.handles[0],
+          encryptedInput.inputProof
+        );
+
+        resultDiv.innerHTML = `<span class="loading">Writing to blockchain...</span>`;
+        const receipt = await tx.wait();
+
+        txHashDiv.innerHTML = `
+          Tx: <a href="https://sepolia.etherscan.io/tx/${receipt.transactionHash}" target="_blank">
+            ${receipt.transactionHash}
+          </a>
+        `;
+
+        // GIẢI MÃ ĐỂ HIỂN THỊ
+        const encryptedCount = await contract.getDeclaration();
+        const decrypted = await fhevm.userDecryptEuint32(encryptedCount, CONTRACT_ADDRESS, userAddress);
+        const usd = decrypted / 100;
+
+        animateResults(usd);
+        fireConfetti();
+
+      } catch (err) {
+        console.error(err);
+        errorDiv.innerText = 
+          err.message.includes("user rejected") ? "You refuse to sign!" 
+          : err.message.includes("proof") ? "Encryption proof error!" 
+          : "Error transaction: " + err.message;
+        resultDiv.innerHTML = "";
+      }
+    }
+
+    // TÍNH THUẾ VÀ HIỂN THỊ
+    function calculateTax(usd) {
+      animateResults(usd);
+    }
+
+    // === HIỆU ỨNG KẾT QUẢ ===
+    function animateResults(amount) {
+      const resultDiv = document.getElementById("result");
+      let category = "", taxRate = 0, statusClass = "";
+
+      if (amount <= 10000) {
+        category = "Bạn thuộc hạng nghèo, không cần đóng thuế"; taxRate = 0; statusClass = "poor";
+      } else if (amount <= 50000) {
+        category = "Thuộc hàng bình thường, thuế 1%"; taxRate = 1; statusClass = "normal";
+      } else if (amount <= 500000) {
+        category = "Thuộc khá giả, đóng thuế 5%"; taxRate = 5; statusClass = "rich";
+      } else if (amount < 1000000) {
+        category = "Bạn thuộc hạng giàu, đóng thuế 10%"; taxRate = 10; statusClass = "super-rich";
+      } else if (amount < 1000000000) {
+        category = "Bạn thuộc triệu phú đô la, đóng thuế 20%"; taxRate = 20; statusClass = "millionaire";
+      } else {
+        category = "Bạn thuộc tỷ phú, sáng ngang với tạp chí Forbes, đóng thuế 30%"; taxRate = 30; statusClass = "billionaire";
+      }
+
+      const tax = (amount * taxRate / 100).toFixed(2);
+      const net = (amount - tax).toFixed(2);
+
+      resultDiv.innerHTML = `
+        <div class="result-item" id="assetLine">
+          <strong>Tài sản:</strong> 
+          <span class="glow-number glow-gold">$${amount.toLocaleString()}</span>
+        </div>
+        <div class="result-item" id="taxLine">
+          <strong>Thuế (${taxRate}%):</strong> 
+          <span class="glow-number glow-red">$${tax}</span>
+        </div>
+        <div class="result-item" id="netLine">
+          <strong>Còn lại:</strong> 
+          <span class="glow-number glow-green">$${net}</span>
+        </div>
+        <div class="status ${statusClass}" id=" |statusLine">${category}</div>
+        <div id="characterImage" style="margin-top: 20px; opacity: 0; transition: opacity 1s ease;"></div>
+      `;
+
+      setTimeout(() => animateIn("#assetLine", "slideInLeft"), 600);
+      setTimeout(() => animateIn("#taxLine", "pulseRed"), 1400);
+      setTimeout(() => animateIn("#netLine", "bounceGreen"), 2200);
+      setTimeout(() => {
+        animateIn("#statusLine", "fadeInScale");
+        showCharacterImage(statusClass);
+      }, 3000);
+    }
+
+    function animateIn(selector, animationName) {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      el.style.opacity = 1;
+      el.style.transform = "translateX(0) scale(1)";
+      el.style.animation = `${animationName} 0.8s ease forwards`;
+    }
+
+    function showCharacterImage(statusClass) {
+      const imgDiv = document.getElementById("characterImage");
+      const images = {
+        poor:        "https://i.imgur.com/8bF3v2J.png",
+        normal:      "https://i.imgur.com/5k3jP9m.png",
+        rich:        "https://i.imgur.com/2fX9kLm.png",
+        "super-rich": "https://i.imgur.com/7vP8nXc.png",
+        millionaire: "https://i.imgur.com/Qw5kR9v.png",
+        billionaire: "https://i.imgur.com/3kLmN2P.png"
+      };
+
+      const imgUrl = images[statusClass];
+      if (imgUrl) {
+        imgDiv.innerHTML = `
+          <img src="${imgUrl}" alt="Character" 
+               style="width: 180px; height: auto; border-radius: 16px; 
+                      box-shadow: 0 0 20px rgba(255,215,0,0.6);">
+        `;
+        setTimeout(() => { imgDiv.style.opacity = 1; }, 200);
+      }
+    }
+
+    function fireConfetti() {
+      const duration = 4 * 1000, end = Date.now() + duration;
+      (function frame() {
+        confetti({ particleCount: 7, angle: 60, spread: 55, origin: { x: 0 } });
+        confetti({ particleCount: 7, angle: 120, spread: 55, origin: { x: 1 } });
+        if (Date.now() < end) requestAnimationFrame(frame);
+      }());
+    }
+
+    // Enter để ghi
+    document.getElementById("amount").addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && !document.getElementById("declareBtn").disabled) {
+        declareOnChain();
+      }
+    });
+  </script>
+</body>
+</html>
