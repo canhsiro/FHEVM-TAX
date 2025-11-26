@@ -15,7 +15,7 @@ fhe-tax-dapp/                  ← Name project folder
     └── main.js                ← all logic FHE + Relayer SDK 
 ```
 
-**Setup version nodejs + npm**
+**1. Setup version nodejs + npm**
 ```
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 ```
@@ -34,7 +34,7 @@ node -v    # → v22.xx.x
 npm -v     # → 10.xx.x
 ```
 
-**BUILD**
+**2. BUILD APP**
 ```
 mkdir fhe-tax-dapp && cd fhe-tax-dapp
 ```
@@ -51,7 +51,7 @@ npm install
 npm install @zama-fhe/relayer-sdk@0.2.0 ethers@5.7.2
 ```
 
-RUN sever
+**3. RUN sever**
 ```
 npm run dev -- --host
 ```
