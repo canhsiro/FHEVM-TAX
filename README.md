@@ -2,7 +2,10 @@
 This is a simple dApp project illustrating the use of Fully Homomorphic Encryption (FHE) from Zama via the Relayer SDK, integrating fhEVM to process encrypted data on the blockchain
 focused on financial/tax security themes, with the slogan: "FHE Encrypted Data – No One Sees Your Money!
 
-
+**Contract**
+```
+0x11408744D57DfC18a170789B28F6F2d6F58A37d1
+```
 **Tree folder**
 
 ```
