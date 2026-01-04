@@ -1,6 +1,8 @@
 # FHEVM-TAX
 This is a simple dApp project illustrating the use of Fully Homomorphic Encryption (FHE) from Zama via the Relayer SDK, integrating fhEVM to process encrypted data on the blockchain
 focused on financial/tax security themes, with the slogan: "FHE Encrypted Data – No One Sees Your Money!
+Users enter the amount of money (assets) they own, and then the system will automatically calculate the corresponding tax for each asset threshold.
+The amount they enter is kept confidential.
 
 **Contract**
 ```
